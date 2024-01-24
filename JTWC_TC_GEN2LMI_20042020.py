@@ -26,7 +26,7 @@ ax.add_feature(cfeature.COASTLINE, edgecolor="black")
 ax.add_feature(cfeature.BORDERS, edgecolor="black")
 ax.gridlines(draw_labels=True)
 
-for i in range(0, 100):
+for i in range(0, 415):
     i_TC = jtwc_DATA.isel(storm=i)
     
     index_GEN = np.where(i_TC.usa_wind >= 34)[0][0]
