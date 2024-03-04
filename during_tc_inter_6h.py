@@ -2,9 +2,6 @@
 import xarray as xr
 import numpy as np
 from scipy.spatial import cKDTree
-import matplotlib.pyplot as plt
-import cartopy.crs as crs 
-
 
 # %%
 dataset = xr.open_dataset('IBTrACS.WP.v04r00.nc')
@@ -48,13 +45,6 @@ new_data_haitang
 oisst_DATA = xr.open_dataset('/home/data/NOAA/OISST/v2.1/only_AVHRR/Daily/sst.day.mean.2005.nc')
 days_3_before_oisst = oisst_DATA.sel(time=dt_array, drop=True)
 
-# %%
-plt.figure(figsize=(10,5))
-ax = plt.axes(projection=crs.PlateCarree())
-ax.coastlines(resolution='10m')
-ax.set_extent([100, 155, 10, 48])
-ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
-
 for index, data in enumerate(dt_array):
     sst_sum = 0
     oisst_07 = oisst_DATA.sel(time=data)
@@ -69,13 +59,8 @@ for index, data in enumerate(dt_array):
     dis_thres = 200/111
     
     indices = oisst_07_coords_tree.query_ball_point(haitang_07_coord, dis_thres)
-    points_07 = oisst_07_coords_sst[indices]
+    1
     
-    for j in range(len(points_07)):
-        ax.plot(points_07[j][1], points_07[j][0], color="red", marker="o", markersize=0.5, transform=crs.PlateCarree())
-        
-plt.savefig('during_tc_inter6h.pdf')
-plt.title('Points within a radius of 200km during tc intervals 6 hours')
-plt.show()
+
     
 # %%
