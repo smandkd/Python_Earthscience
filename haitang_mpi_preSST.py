@@ -602,7 +602,7 @@ ds = run_sample_dataset(df)
 ds.to_netcdf('0307_output_preSST.nc')
 
 # %%
-output_dataset = xr.open_dataset('0307_output_preSST.nc')
-output_dataset['vmax'] = output_dataset['vmax'] * 1.94384
-output_dataset
+preSST_dataset = xr.open_dataset('0307_output_preSST.nc')
+preSST_dataset['vmax'] = preSST_dataset['vmax'] * 1.94384
+preSST_dataset
 # %%
