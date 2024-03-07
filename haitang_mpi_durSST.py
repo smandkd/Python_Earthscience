@@ -1,6 +1,6 @@
 #%%
 import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+# sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from pyPI import utilities
 from pyPI import pi
 from pyPI import constants
@@ -597,7 +597,9 @@ ds = run_sample_dataset(df)
 ds.to_netcdf('0307_output_durSST.nc')
 
 # %%
-output_dataset = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/0307_output_durSST.nc')
-output_dataset['vmax'] = output_dataset['vmax'] * 1.94384
-output_dataset
+durSST_dataset = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/0307_output_durSST.nc')
+durSST_dataset['vmax'] = durSST_dataset['vmax'] * 1.94384
+durSST_dataset
+# %%
+durSST_dataset
 # %%
