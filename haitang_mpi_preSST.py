@@ -1,14 +1,17 @@
 #%%
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+from pyPI import utilities
+from pyPI import pi
+from pyPI import constants
+
 import xarray as xr
 import pickle
-from pyPI import pi
-from pyPI.utilities import *
 import numpy as np
 from scipy.spatial import cKDTree
 import pandas as pd
-from pyPI import constants
-from pyPI import utilities
-#%%
+import numba as nb
+#%%  
 def lmi(wind_array):
     if np.all(np.isnan(wind_array)):
         return None
@@ -53,12 +56,14 @@ gen_index = gen(wind_array)
 lmi_index = lmi(wind_array)
 selected_indices = np.arange(gen_index, lmi_index+1)
 haitang_dataset = tc_HAITANG.isel(date_time=selected_indices, drop=True)
-#%%
-haitang_time = haitang_dataset['time'] - pd.Timedelta(days=3)
-haitang_time
-# Substraction 3 days in  variable 'time' 
-#%%
 
+haitang_time = haitang_dataset['time'] - pd.Timedelta(days=3)
+
+#%%
+haitang_time
+
+#%%
+# Substraction 3 days in  variable 'time' 
 dt_array = []
 for data in haitang_time[0]:
     datetime = np.array(data, dtype='datetime64[ns]')
@@ -69,8 +74,6 @@ lat = np.array(haitang_dataset.usa_lat[0], dtype=object)
 lon = np.array(haitang_dataset.usa_lon[0], dtype=object)
 # Haitang usa latitude, longitude 
 HAITANG_coords = np.column_stack((lat,lon))
-HAITANG_coords
-
 #%%
 dt_array
 #%% Air Temp, Specific Hum, MSLP, SST from ERA5, OISST 
@@ -81,16 +84,17 @@ oisst_DATA = xr.open_dataset('/home/data/NOAA/OISST/v2.1/only_AVHRR/Daily/sst.da
 
 #%% level array
 level_arr = airt_dataset.level.data[::-1] # sorting downgrade 
-level_arr
+
 #%% dis threshold, fitering dataset with dt_array
 
 dis_thres = 200/111
 
-days_3_before_shum_dataset = shum_dataset.sel(time=dt_array, drop=True)
+before_3_shum_dataset = shum_dataset.sel(time=dt_array, drop=True)
 days_3_before_oisst = oisst_DATA.sel(time=dt_array, drop=True)
 days_3_before_mslp = dataset_era5_mslp.sel(time=dt_array, drop=True)
 days_3_before_airt = airt_dataset.sel(time=dt_array, drop=True)
-
+#%%
+days_3_before_airt
 #%%
 # -------------------
 #
@@ -102,7 +106,7 @@ shum_mean_arr = []
 for index, time in enumerate(dt_array):
     shum_arr = []
     
-    shum_dataset = isel_time_dataset(days_3_before_shum_dataset, index)
+    shum_dataset = isel_time_dataset(before_3_shum_dataset, index)
     
     lat = shum_dataset.latitude
     lon = shum_dataset.longitude
@@ -233,8 +237,6 @@ dataset = xr.Dataset(data_vars, coords=dims)
 nc_path = '0307_data_preSST.nc'
 dataset.to_netcdf(path=nc_path)
 dt = xr.open_dataset('0307_data_preSST.nc')
-#%%
-dt
 # %% pi method
 # define the function to calculate CAPE
 @nb.njit()
@@ -552,7 +554,7 @@ def pi(SSTC,MSL,P,TC,R,CKCD=0.9,ascent_flag=0,diss_flag=1,V_reduc=0.8,ptop=50,mi
     # BE02 EQN. 3, reduced by some fraction (default 20%) to account for the reduction 
     # of 10-m winds from gradient wind speeds (Emanuel 2000, Powell 1980)
     FAC=max([0.0,(CAPEMS-CAPEM)])
-    VMAX=V_reduc*np.sqrt(CKCD*RAT*FAC)
+    VMAX=V_reduc*np.sqrt(CKCD*RAT*FAC) 
         
     # Return the calculated outputs to the above program level
     return(VMAX,PMIN,IFL,TO,OTL)
@@ -578,9 +580,9 @@ def run_sample_dataset(fn, dim='p',CKCD=0.9):
     ) 
     
     # store the result in an xarray data structure
-    vmax, pmin, ifl, t0, otl = result
+    vmax, pmin, ifl, t0, otl = result    
     out_ds=xr.Dataset({
-        'vmax': vmax, 
+        'vmax': vmax , 
         'pmin': pmin,
         'ifl': ifl,
         't0': t0,
@@ -599,20 +601,8 @@ df = '0307_data_preSST.nc'
 ds = run_sample_dataset(df)
 ds.to_netcdf('0307_output_preSST.nc')
 
-
 # %%
 output_dataset = xr.open_dataset('0307_output_preSST.nc')
-output_dataset['vmax'].data = output_dataset.vmax.data * 1.94384 
+output_dataset['vmax'] = output_dataset['vmax'] * 1.94384
 output_dataset
 # %%
-# %%
-output_dataset
-# %%
-"""
-[ 57.82368787,  59.5445817 ,  59.37973539,  59.58861391,
-60.590151  ,  59.45296772,  58.81586864,  63.36563513,
-68.10961119,  83.35564895,  84.03917014,  84.27731087,
-94.60427303, 107.01105169, 106.27721377, 111.43935868,
-117.69880706, 137.15218029, 130.2066928 , 126.47877118]
-
-"""
