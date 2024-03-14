@@ -215,16 +215,11 @@ durSST_dataset['vmax'] = durSST_dataset['vmax'] * 1.94384
 pre_int = np.round(preSST_dataset.vmax.data)
 dur_int = np.round(durSST_dataset.vmax.data)
 #%%
-pre_int
-"""
-[ 58.,  60.,  59.,  60.,  61.,  59.,  59.,  63.,  68.,  83.,  84.,
-        84.,  95., 107., 106., 111., 118., 137., 130., 126.]
-
-"""
-#%%
 
 for i in range(len(pre_int)):
     print(f'usa_wind : {haitang_dataset.usa_wind.data[0][i]} pre : {pre_int[i]} dur : {dur_int[i]}')
+
+# %%
 """
 usa_wind : 35.0 pre : 58.0 dur : 60.0
 usa_wind : 35.0 pre : 60.0 dur : 64.0
@@ -246,7 +241,4 @@ usa_wind : 120.0 pre : 118.0 dur : 133.0
 usa_wind : 130.0 pre : 137.0 dur : 135.0
 usa_wind : 135.0 pre : 130.0 dur : 136.0
 usa_wind : 140.0 pre : 126.0 dur : 135.0
-
 """
-
-# %%
