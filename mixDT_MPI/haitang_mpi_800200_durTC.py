@@ -1,6 +1,6 @@
 #%%
-import MPI_ex.python_sang_ex.sang_ex.mixingdt_mpi.methods as mt 
-import MPI_ex.python_sang_ex.sang_ex.mixingdt_mpi.mpi as mpi 
+import mixingdt_mpi.methods as mt 
+import mixingdt_mpi.mpi as mpi 
 
 import scipy.interpolate as interpolate
 

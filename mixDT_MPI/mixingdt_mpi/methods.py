@@ -4,7 +4,7 @@ import xarray as xr
 
 from netCDF4 import Dataset
 import pandas as pd
-import MPI_ex.python_sang_ex.sang_ex.mixingdt_mpi.mixing_depth_temp as mdt
+from .mixing_depth_temp import mixing_depth
 
 from scipy.spatial import cKDTree
 from scipy.interpolate import splrep, splev 
