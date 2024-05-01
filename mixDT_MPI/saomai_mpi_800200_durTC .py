@@ -1,12 +1,11 @@
 #%%
-import mixingdt_mpi.methods as mt 
-import mixingdt_mpi.mpi as mpi 
+import MPI_ex.MPI_mixing_depth_temp.mixing_dt_mpi.methods as mt 
+import MPI_ex.MPI_mixing_depth_temp.mixing_dt_mpi.mpi as mpi 
 
 import scipy.interpolate as interpolate
 
 import xarray as xr
 import numpy as np
-import pandas as pd
 
 import matplotlib.pyplot as plt
 import cartopy.crs as crs
@@ -39,7 +38,6 @@ days_3_before_oisst = sst_dataset.sel(time=pre_dt, drop=True)
 days_3_before_mslp = mslp_dataset.sel(time=pre_dt, drop=True)
 present_airt_dataset = airt_dataset.sel(time=dt, drop=True)
 #%%
-saomai_dataset
 df_saomai = mt.create_TC_dataframe(saomai_dataset)
 #%%
 # ----------------------------
@@ -119,18 +117,17 @@ data_vars = {
 }
 
 dataset = xr.Dataset(data_vars, coords=dims)
-nc_path = '/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/800200_saomai_input_durSST_donut.nc'
+nc_path = '/home/tkdals/homework_3/MPI_ex/MPI_mixing_depth_temp/800200_saomai_input_durSST_donut_2.nc'
 dataset.to_netcdf(path=nc_path)
 #%%
-nc_path = '/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/800200_saomai_input_durSST_donut.nc'
-input_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/800200_saomai_input_durSST_donut.nc')
+input_ds = xr.open_dataset(nc_path)
 input_ds
 #%%
 output_ds = mpi.run_sample_dataset(nc_path, CKCD=0.9)
-output_ds.to_netcdf('800200_saomai_output_durSST_donut.nc')
+output_ds.to_netcdf('/home/tkdals/homework_3/MPI_ex/MPI_mixing_depth_temp/800200_saomai_output_durSST_donut_2.nc')
 
 # %%
-output_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/800200_saomai_output_durSST_donut.nc')
+output_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/MPI_mixing_depth_temp/800200_saomai_output_durSST_donut_2.nc')
 #%%
 output_ds
 #%%
@@ -161,6 +158,7 @@ plt.style.use('default')
 plt.rcParams['figure.figsize'] = (10, 6)
 plt.rcParams['font.size'] = 12
 
+
 fig, ax1 = plt.subplots()
 ax1.set_xlabel('time')
 ax1.set_ylabel('MPI(Knots)')
@@ -169,10 +167,24 @@ ax1.legend(loc='upper right')
 
 ax2 = ax1.twinx()
 ax2.set_ylabel('DAT(degreeC)')
-ax2.plot(time_arr, dat, 'bo-', color='deeppink', label='sst')
-ax2.legend(loc='lower right')
+ax2.plot(time_arr, dat, 'bo-', color='deeppink', label='mixing temp')
+ax2.legend(loc='lower left')
 
 plt.xticks(np.arange(1, 18, step=1))
+plt.title('Saomai mixing temperature, MPI')
+plt.show()
+
+#%%
+# ===============================
+#    Wind stress
+# ===============================
+time_arr = np.arange(0, 18)
+plt.figure(figsize=(10, 6))
+plt.plot(time_arr, wind_stress_list, 'bo-', color='green')
+plt.xticks(np.arange(0, 18, step=1))
+plt.xlabel('time')
+plt.ylabel('wind stress')
+plt.title('wind stress')
 plt.show()
 
 # %%
@@ -181,10 +193,11 @@ plt.show()
 # ===============================
 time_arr = np.arange(0, 18)
 plt.figure(figsize=(10, 6))
-plt.plot(time_arr, depth_list, 'bo-', color='green')
+plt.plot(time_arr, depth_list, 'bo-', color='blue')
 plt.xticks(np.arange(0, 18, step=1))
 plt.xlabel('time')
 plt.ylabel('saomai mixing depth(m)')
+plt.ylim(0, 450)
 plt.title('Saomai mixing depth(m)')
 plt.show()
 
@@ -194,8 +207,9 @@ plt.show()
 # ===============================
 time_arr = np.arange(0, 18)
 plt.figure(figsize=(10, 6))
-plt.plot(time_arr, Tmix_list, 'bo-')
+plt.plot(time_arr, dat, 'bo-', color='red')
 plt.xticks(np.arange(0, 18, step=1))
+plt.ylim(20, 30)
 plt.xlabel('time')
 plt.ylabel('saomai Depth-averaged temperature(degreeC)')
 plt.title('Saomai Depth-averaged temperature(degreeC)')

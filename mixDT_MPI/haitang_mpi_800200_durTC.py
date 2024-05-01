@@ -1,14 +1,11 @@
 #%%
-import mixingdt_mpi.methods as mt 
-import mixingdt_mpi.mpi as mpi 
+import MPI_ex.MPI_mixing_depth_temp.mixing_dt_mpi.methods as mt 
+import MPI_ex.MPI_mixing_depth_temp.mixing_dt_mpi.mpi as mpi 
 
 import scipy.interpolate as interpolate
 
 import xarray as xr
 import numpy as np
-import pandas as pd
-
-from netCDF4 import Dataset
 
 import matplotlib.pyplot as plt
 import cartopy.crs as crs
@@ -18,11 +15,14 @@ import warnings
 warnings.filterwarnings(action='ignore')
 
 # %%
-haitang_dataset = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/haitang_2005.nc')
+haitang_dataset = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/data/haitang_2005.nc')
 
 haitang_date = haitang_dataset['time']
 pre_dt = mt.TC_pre_3_date(haitang_date)
 dt = mt.TC_present_date(haitang_date)
+#%%
+formatted_dates = [f"{date.astype(object).month}/{date.astype(object).day}" for date in dt]
+formatted_dates
 # %%
 HAITANG_coords = mt.TC_usa_center_points(haitang_dataset)
 
@@ -70,9 +70,12 @@ print(f'Residence time : {FT_list}')
 print(f'Wind stress : {Tx_list}')
 
 #%%
-# -------------------
+# ----------------------------------------------
+#
 # Specific Humidity
-# -------------------
+# kg kg**-1(kg/kg) to g/kg by multipling 1000
+#
+# ----------------------------------------------
 shum_mean_arr = []
 shum_10_list = []
 shum_mean_arr, shum_10_list = mt.shum_donut_mean(HAITANG_coords, preset_shum_dataset)
@@ -119,47 +122,103 @@ data_vars = {
     'windstress':(['time'], Tx_list)
 }
 #%%
-dataset = xr.Dataset(data_vars, coords=dims)
-nc_path = '/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/800200_haitang_input_durSST_donut.nc'
-dataset.to_netcdf(path=nc_path)
+input_path = '/home/tkdals/homework_3/MPI_ex/data/800200_haitang_input_durSST_donut.nc'
+input_path_2 = '/home/tkdals/homework_3/MPI_ex/data/800200_haitang_input_durSST_donut_2.nc'
+output_path = '/home/tkdals/homework_3/MPI_ex/data/800200_haitang_output_durSST_donut.nc'
+output_path_2 = '/home/tkdals/homework_3/MPI_ex/data/800200_haitang_output_durSST_donut_2.nc'
 #%%
-nc_path = '/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/800200_haitang_input_durSST_donut.nc'
-input_ds = xr.open_dataset(nc_path)
-input_ds
 
+dataset = xr.Dataset(data_vars, coords=dims)
+dataset.to_netcdf(path=input_path)
 #%%
-ds = mpi.run_sample_dataset(nc_path, CKCD=0.9)
-ds.to_netcdf('800200_haitang_output_durSST_donut.nc')
+ds = mpi.run_sample_dataset(input_path_2, CKCD=0.9)
+ds.to_netcdf(output_path_2)
 
 # %%
-output_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/python_sang_ex/sang_ex/800200_haitang_output_durSST_donut.nc')
+input_ds_2 = xr.open_dataset(input_path_2)
+input_ds = xr.open_dataset(input_path)
+
+output_ds = xr.open_dataset(output_path)
+output_ds_2 = xr.open_dataset(output_path_2)
+#%%
+output_ds_2['vmax'] = output_ds_2['vmax'] * 1.94384 # m/s t0 Knots
+#%%
+output_ds['vmax'] = output_ds['vmax'] * 1.94384 # m/s t0 Knots
 #%%
 output_ds
-#%%
-
-output_ds['vmax'] = output_ds['vmax'] * 1.94384 # m/s t0 Knots
 
 #%%
 dur_mpi = output_ds.vmax.data
 dat = output_ds.sst.data
 time = output_ds.time.data
-msl = output_ds.msl.data
-airt = output_ds.t.data
-hum = output_ds.q.data
+mslp = output_ds.mslp.data
+airt = output_ds.airt.data
+hum = output_ds.shum.data
 #%%
-ocean_potent_temp = input_ds.oceanpotentialtemp.data
+ocean_potent_temp = input_ds.theta.data
 shum_10_list = input_ds.shum_10m.data
 airt_10_list = input_ds.airt_10m.data
-residence_time_list = input_ds.residence.data
+residence_time_list = input_ds.resitime.data
 wind_stress_list = input_ds.windstress.data
-mixing_depth_list = input_ds.variableD.data
+mixing_depth_list = input_ds.mixD.data
 theta_list = input_ds.theta.data
 #%%
-wind_stress_list
+mixing_t_2 = input_ds_2.sst.data
+mixing_t = input_ds.sst.data
+mixing_d = input_ds.mixD.data
+mixing_d_2 = input_ds_2.mixD.data
+windstr = input_ds.windstress.data
+windstr_2 = input_ds_2.windstress.data
+mpi_2 = output_ds_2.vmax.data
+mpi_1 = output_ds.vmax.data
 #%%
-for i in range(len(dur_mpi)):
-    time_formatted = pd.to_datetime(time[i]).strftime('%Y-%m-%d')    
-    print(f' {np.round(dur_mpi[i], 3)}')    
+mpi_2
+#%%
+len(mpi_1)
+#%%
+time_arr = np.arange(0, 20)
+
+plt.plot(time_arr, mixing_d, 'bo-', color='green', label='old mixing depth')
+plt.plot(time_arr, mixing_d_2, 'bo-',color='deeppink', label='new mixing depth')
+plt.ylabel('depth(m)')
+plt.title('Haitang mixing depth(m), 6 hours interval')
+plt.legend(loc='upper left')
+plt.xticks(ticks=np.arange(len(formatted_dates)), labels=formatted_dates, rotation=45, fontsize=9)  # 회전 추가로 레이블이 겹치지 않게 함
+plt.yticks(fontsize=9)
+plt.xticks(np.arange(0, 20, step=1))
+plt.show()
+
+#%%
+time_arr = np.arange(0, 20)
+plt.plot(time_arr, mixing_t, 'bo-', color='green', label='old mixing temperature')
+plt.plot(time_arr, mixing_t_2,'bo-', color='deeppink', label='new mixing temperature')
+plt.ylabel('temperature(degreeC)')
+plt.title('Haitang mixing temperature(degreeC), 6 hours interval')
+plt.legend(loc='upper left')
+plt.xticks(ticks=np.arange(len(formatted_dates)), labels=formatted_dates, rotation=45, fontsize=9)  # 회전 추가로 레이블이 겹치지 않게 함
+plt.yticks(fontsize=9)
+plt.xticks(np.arange(0, 20, step=1))
+plt.show()
+#%%
+time_arr = np.arange(0, 20)
+plt.plot(time_arr, windstr, color='green', label='old wind stress')
+plt.plot(time_arr, windstr_2, color='deeppink', label='new wind stress')
+plt.ylabel('wind stress(N/m^2)')
+plt.title('Haitang wind stress(N/m^2), 6 hours interval')
+plt.xticks(ticks=np.arange(len(formatted_dates)), labels=formatted_dates, rotation=45, fontsize=8)  # 회전 추가로 레이블이 겹치지 않게 함
+plt.yticks(fontsize=8)
+plt.legend(loc='upper left')
+plt.show()
+#%%
+time_arr = np.arange(0, 20)
+plt.plot(time_arr, mpi_1, 'bo-', color='green', label='old MPI')
+plt.plot(time_arr, mpi_2, 'bo-', color='deeppink', label='new MPI')
+plt.ylabel('MPI(Knots)')
+plt.title('Haitang MPI(Knots), 6 hours interval')
+plt.xticks(ticks=np.arange(len(formatted_dates)), labels=formatted_dates, rotation=45, fontsize=9)  # 회전 추가로 레이블이 겹치지 않게 함
+plt.yticks(fontsize=9)
+plt.legend(loc='upper left')
+plt.show()
 
 # %%
 # ===============================
@@ -167,11 +226,24 @@ for i in range(len(dur_mpi)):
 # ===============================
 time_arr = np.arange(0, 20)
 plt.figure(figsize=(10, 6))
-plt.plot(time_arr, mixing_depth_list, 'bo-', color='green')
+plt.plot(time_arr, mixing_depth_list, 'bo-', color='blue')
 plt.xticks(np.arange(0, 20, step=1))
+plt.ylim(0, 450)
 plt.xlabel('time')
 plt.ylabel('haitang mixing depth(m)')
 plt.title('Haitang mixing depth(m)')
+plt.show()
+
+#%%
+# ===============================
+#    Wind stress
+# ===============================
+time_arr = np.arange(0, 20)
+plt.figure(figsize=(10, 6))
+plt.plot(time_arr, wind_stress_list, color='green')
+plt.xlabel('time')
+plt.ylabel('wind stress')
+plt.title('wind stress')
 plt.show()
 
 #%%
@@ -180,8 +252,9 @@ plt.show()
 # ===============================
 time_arr = np.arange(0, 20)
 plt.figure(figsize=(10, 6))
-plt.plot(time_arr, dat, 'bo-')
+plt.plot(time_arr, dat, 'bo-', color="red")
 plt.xticks(np.arange(0, 20, step=1))
+plt.ylim(20, 30)
 plt.xlabel('time')
 plt.ylabel('haitang Depth-averaged temperature(degreeC)')
 plt.title('Haitang Depth-averaged temperature(degreeC)')
@@ -193,7 +266,7 @@ plt.show()
 #          DAT, MPI 그래프 
 # ========================================
 
-time_arr = np.arange(1, 21)
+time_arr = np.arange(0, 20)
 plt.style.use('default')
 plt.rcParams['figure.figsize'] = (10, 6)
 plt.rcParams['font.size'] = 12
@@ -201,15 +274,16 @@ plt.rcParams['font.size'] = 12
 fig, ax1 = plt.subplots()
 ax1.set_xlabel('time')
 ax1.set_ylabel('mpi(knots)')
-ax1.plot(time_arr, dur_mpi, 'bo-', color='green', label='mpi')
+ax1.plot(time_arr, mpi_2, 'bo-', color='red', label='mpi')
 ax1.legend(loc='upper right')
 
 ax2 = ax1.twinx()
 ax2.set_ylabel('dat(degree celcius)')
-ax2.plot(time_arr, dat, 'bo-', color='deeppink', label='sst')
-ax2.legend(loc='lower right')
+ax2.plot(time_arr, mixing_t_2, 'bo-', color='blue', label='mixing temp')
+ax2.legend(loc='upper left')
 
-plt.xticks(np.arange(1, 21, step=1))
+plt.xticks(ticks=np.arange(len(formatted_dates)), labels=formatted_dates, rotation=45, fontsize=8) 
+plt.title('New mixing temperature, MPI 6 hours interval')
 plt.show()
 # %%
 # ===================================================

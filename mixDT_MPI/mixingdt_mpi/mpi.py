@@ -1,7 +1,7 @@
 import numpy as np
 import numba as nb
-from pyPI import constants
-from pyPI import utilities
+from MPI_ex.MPI_mixing_depth_temp.pyPI import constants
+from MPI_ex.MPI_mixing_depth_temp.pyPI import utilities
 import xarray as xr
 
 @nb.njit()

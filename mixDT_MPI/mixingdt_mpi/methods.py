@@ -399,14 +399,13 @@ def calculate_depth_mixing_d_t(data):
         TS = row.storm_speed * 0.51444 # knots to m/s
         R = tc_rad * 1852 # nmile to m 
         # R = 200 * 1000 # km to m 
-        Vmax = row.usa_wind * 0.51444
+        Vmax = row.usa_wind * 0.51444 # knots to m/s
         
         for i in range(len_lat):
             for j in range(len_lon):
                 S = salt_data[:, :, i, j][0]
                 T = theta_data[:, :, i, j][0]
-                Dmix, Tmix, dens, FT, Tx = mdt.mixing_depth(D, T, S, Vmax, TS, R)
-                print(dens) # 0m 깊이 density
+                Dmix, Tmix, dens, FT, Tx = mixing_depth(D, T, S, Vmax, TS, R)
                 t_list.append(Tmix)                   
                 d_list.append(Dmix)         
                 de_list.append(np.nanmean(dens[0:30]))
