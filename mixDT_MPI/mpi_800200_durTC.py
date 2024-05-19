@@ -24,8 +24,6 @@ dataset = xr.open_dataset('/home/tkdals/homework_3/IBTrACS.WP.v04r00.nc')
 tc_dataset = mt.preprocess_IBTrACS(dataset, tc_sid, tc_agency)
 #%%
 tc_dataset
-[ 40.,  45.,  50.,  60.,  65.,  75.,  85., 115., 130., 130., 130.,
-        135., 140.]
 #%%
 tc_date = tc_dataset['time']
 
@@ -169,6 +167,9 @@ output_ds
 output_ds['vmax'] = output_ds['vmax'] * 1.94384 # m/s t Knots
 output_ds
 #%%
+# =============================================
+# Plot MPI, TC wind speed
+# =============================================
 dur_mpi = output_ds['vmax'].data
 
 usa_wind = df_tc.usa_wind # unit : Knots
@@ -188,6 +189,9 @@ plt.show()
 # %%
 print(len(dt))
 #%%
+# =============================================
+# Plot MPI, Mixing temperature
+# =============================================
 mixing_t_2 = input_ds.sst.data
 mpi_2 = output_ds.vmax.data
 time_arr = np.arange(0, len(dt))
@@ -211,12 +215,4 @@ ax2.legend(loc='upper left')
 # plt.title('Old mixing temperature, MPI 6 hours interval')
 plt.title('Choiwan Mixing temperature, MPI')
 plt.show()
-# %%
-output_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_output_durSST_donut_2.nc')
-# %%
-output_ds
-# %%
-
-input_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_input_durSST_donut_ori.nc')
-input_ds
 # %%
