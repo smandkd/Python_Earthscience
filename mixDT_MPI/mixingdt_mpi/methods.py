@@ -1,10 +1,11 @@
 import numpy as np
 import os
 import xarray as xr
+import matplotlib.pyplot as plt
 
 from netCDF4 import Dataset
 import pandas as pd
-from .mixing_depth_temp import mixing_depth
+from MPI_ex.MPI_mixing_depth_temp.mixing_dt_mpi.mixing_depth_temp import mixing_depth
 
 from scipy.spatial import cKDTree
 from scipy.interpolate import splrep, splev 
@@ -279,7 +280,6 @@ def donut_points(dataset, tc_coord, inner_thres):
     
     outer_coords = coords[outer_indices]
     inner_coords = set(map(tuple, coords[inner_indices]))
-    ex_coords = coords[inner_indices]
     
     donut_coords = np.array([coord for coord in outer_coords if tuple(coord) not in inner_coords])
 
@@ -333,31 +333,16 @@ def sel_lat_lon_dataset_netcdf(data, lat, lon):
         return result
     
 def calculate_depth_mixing_d_t(data):
-    ecco2_haitang_lon = [] # longitude in TC radius
-    ecco2_haitang_lat = [] # latitude in TC radius
+    count = 0
     Tmix_list = []
     Dmix_list = [] 
-    Theta_list = []
-    Salt_list = []
-    Dens_list = []
-    FT_list = []
-    Tx_list = []
+    donut_lat = []
+    donut_lon = []
+
     
     for index, row in data.iterrows():
         t_list = []
         d_list = []
-        tmix_list = []
-        dmix_list = []
-        theta_list = []
-        the_list = []
-        salt_list = []
-        sa_list = []
-        dens_list = []
-        de_list = []
-        f_list = []
-        ft_list = []
-        x_list = []
-        tx_list = []
         
         print(f'index : {index}')
         lat = row.usa_lat
@@ -365,83 +350,59 @@ def calculate_depth_mixing_d_t(data):
         date = row.time
         print(date)
         tc_rad = row.usa_rmw
-        tc_rad_dres = (tc_rad * 1.852)/111
-        # tc_rad_dres = 200/111 
+        
         salt_dataset, opt_dataset = open_dataset(date)
         tc_coord = [lon, lat]
         
+        tc_rad_dres = (tc_rad * 1.852)/111
         sal_lon, sal_lat = points_tc(salt_dataset, tc_coord, tc_rad_dres)
         opt_lon, opt_lat = points_tc(opt_dataset, tc_coord, tc_rad_dres)
+        
+        # tc_rad_dres = 200/111 
+        # sal_lon, sal_lat = donut_points(salt_dataset, tc_coord, tc_rad_dres)
+        # opt_lon, opt_lat = donut_points(opt_dataset, tc_coord, tc_rad_dres)
+        
+        print(len(sal_lon))
+        print(len(sal_lat))
+        donut_lat.append(sal_lat)
+        donut_lon.append(sal_lon)
         
         if (len(sal_lon) == 0) or (len(opt_lon) == 0):
             Tmix_list.append(Tmix_list[-1] - 1)
             Dmix_list.append(Dmix_list[-1] - 1)
-            Theta_list.append(Theta_list[-1])
-            Salt_list.append(Salt_list[-1])
-            Tx_list.append(Tx_list[-1])
-            Dens_list.append(Dens_list[-1])
-            FT_list.append(FT_list[-1])
-            
+        
             break
         
-        ecco2_haitang_lon.append(sal_lon)
-        ecco2_haitang_lat.append(sal_lat)
-
         salt_haitang = sel_lat_lon_dataset(salt_dataset, sal_lat, sal_lon)
         theta_haitang = sel_lat_lon_dataset(opt_dataset, opt_lat, opt_lon)
         salt_data = salt_haitang.SALT.data
         theta_data = theta_haitang.THETA.data
         depth = salt_dataset['DEPTH_T'][:]
         len_lat = len(sal_lat)
-        len_lon = len(sal_lon)
         
         D = depth
         TS = row.storm_speed * 0.51444 # knots to m/s
         R = tc_rad * 1852 # nmile to m 
-        # R = 200 * 1000 # km to m 
+        #R = 200 * 1000 # km to m 
         Vmax = row.usa_wind * 0.51444 # knots to m/s
         
         for i in range(len_lat):
-            for j in range(len_lon):
-                S = salt_data[:, :, i, j][0]
-                T = theta_data[:, :, i, j][0]
-                Dmix, Tmix, dens, FT, Tx = mixing_depth(D, T, S, Vmax, TS, R)
-                t_list.append(Tmix)                   
-                d_list.append(Dmix)         
-                de_list.append(np.nanmean(dens[0:30]))
-                f_list.append(FT)
-                x_list.append(Tx)
-                
-                the_list.append(np.nanmean(theta_data[:, 0, i, j][0]))
-                sa_list.append(np.nanmean(salt_data[:, 0, i, j][0]))
-                            
-            tmix_list.append(np.nanmean(t_list))
-            dmix_list.append(np.nanmean(d_list))
-            theta_list.append(np.nanmean(the_list))
-            salt_list.append(np.nanmean(sa_list))
-            dens_list.append(np.nanmean(de_list))
-            ft_list.append(np.nanmean(f_list))
-            tx_list.append(np.nanmean(x_list))
-            
-            t_list = []
-            d_list = []
-            # print(Tmix)
-            # print('**************************************************************')
-        Tmix_list.append(np.nanmean(tmix_list))
-        Dmix_list.append(np.nanmean(dmix_list))
-        Theta_list.append(np.nanmean(theta_list))
-        Salt_list.append(np.nanmean(salt_list))
-        Dens_list.append(np.nanmean(dens_list))
-        FT_list.append(np.nanmean(ft_list))
-        Tx_list.append(np.nanmean(tx_list))
-        tmix_list = []
-        dmix_list = []
-        print(Tmix_list)
-        
-    return Tmix_list, Dmix_list, Theta_list, Salt_list, Dens_list, FT_list, Tx_list
+            count += 1
+            S = salt_data[:, :, i, i][0]
+            T = theta_data[:, :, i, i][0]
+            Dmix, Tmix, dens, FT, Tx = mixing_depth(D, T, S, Vmax, TS, R)
+            t_list.append(Tmix)                   
+            d_list.append(Dmix)         
+           
+        Tmix_list.append(np.nanmean(t_list))
+        Dmix_list.append(np.nanmean(d_list))
+
+    return Tmix_list, Dmix_list, donut_lon, donut_lat
 
 def shum_donut_mean(tc_coords, pre_dataset):
     shum_mean_arr = []
+    donut_lat = []
+    donut_lon = []
     
     lenght = len(tc_coords)
 
@@ -452,7 +413,8 @@ def shum_donut_mean(tc_coords, pre_dataset):
         
         shum_dataset = isel_time_dataset(pre_dataset, i)
         new_lon, new_lat = donut_points(shum_dataset, tc_coord, tc_thres)
-        
+        donut_lat.append(new_lat)
+        donut_lon.append(new_lon)
         len_level = len(shum_dataset.level.data)
         filtered_shum_dataset = sel_lat_lon_dataset(shum_dataset, new_lat, new_lon)
         
@@ -480,18 +442,21 @@ def shum_donut_mean(tc_coords, pre_dataset):
 
 def mslp_donut_mean(pre_dt, tc_coords, pre_dataset):
     mslp_daily_averages = []
+    donut_lat = []
+    donut_lon = []
 
-    for index, time in enumerate(pre_dt):
+    for index in range(0, len(pre_dt)):
         
         mslp_dataset = isel_time_dataset(pre_dataset, index)
         tc_thres = 200 / 111
         tc_coord = tc_coords[index]
         
         new_lon, new_lat = donut_points(mslp_dataset, tc_coord, tc_thres)
+        donut_lat.append(new_lat)
+        donut_lon.append(new_lon)
         filtered_mslp_dataset = sel_lat_lon_dataset(mslp_dataset, new_lat, new_lon)
         
         msl_arr = filtered_mslp_dataset.msl.data[0]/100
-        print(f'{time}  {msl_arr}')
         msl_mean = np.mean(msl_arr)
         mslp_daily_averages.append(msl_mean)
         
@@ -499,6 +464,8 @@ def mslp_donut_mean(pre_dt, tc_coords, pre_dataset):
 
 def airt_donut_mean(dt, tc_coords, pre_dataset):
     airt_array = []
+    donut_lat = []
+    donut_lon = []
 
     for index, time in enumerate(dt):
         level_airt_arr = []
@@ -508,26 +475,30 @@ def airt_donut_mean(dt, tc_coords, pre_dataset):
         tc_coord = tc_coords[index]
         
         new_lon, new_lat = donut_points(airt_dataset, tc_coord, tc_thres)
+        donut_lat.append(new_lat)
+        donut_lon.append(new_lon)
         new_airt_data = sel_lat_lon_dataset(airt_dataset, new_lat, new_lon)
         level = len(airt_dataset.level.data)
         
         for level in range(level):
             dataset = isel_level_dataset(new_airt_data, level)
             airt_arr = dataset.t.data - 273.15
-            print(f'{time} {level} {airt_arr}')
+            
             airt_mean = np.mean(airt_arr)
             
             level_airt_arr.append(airt_mean)
-            print('==================================')
             
         airt_array.append(level_airt_arr[::-1])
-
+        
+        print(airt_array)
+        print('++++++++++++++++++++++++++++++++++++++++++++++++++')
+        
     airt_10_list = []
 
     for i in range(len(airt_array)):
         airt_10_list.append(airt_array[i][0])
         
-    return airt_array, airt_10_list    
+    return airt_array, airt_10_list
     
     
 
