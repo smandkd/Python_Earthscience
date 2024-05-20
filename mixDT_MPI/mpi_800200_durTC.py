@@ -12,9 +12,10 @@ import cartopy.feature as cfeature
 import warnings
 warnings.filterwarnings(action='ignore')
 #%%
-tc_name = 'haitang'
-tc_sid = b'2005192N22155'
+tc_name = 'banyan'
+tc_sid = b'2017223N16172'
 tc_agency = b'jtwc_wp'
+area_type = 'usa_rmw_prof'
 
 # %%
 dataset = xr.open_dataset('/home/tkdals/homework_3/IBTrACS.WP.v04r00.nc')
@@ -70,20 +71,25 @@ Dens_list = []
 FT_list = []
 Tx_list = []
 
-Tmix_list, Dmix_list, ecco2_haitang_lon, ecco2_haitang_lat = mt.calculate_depth_mixing_d_t(df_tc)
+Tmix_list, Dmix_list, ecco2_haitang_lon, ecco2_haitang_lat = mt.calculate_depth_mixing_d_t(df_tc, area_type)
 
 print(f'Tmix : {np.round(Tmix_list, 2)}')
 print(f'Dmix : {np.round(Dmix_list, 2)}')
 
 #%%
-flattened_longitude = np.concatenate(ecco2_haitang_lon)
-flattened_latitude = np.concatenate(ecco2_haitang_lat)
+flat_lon = np.concatenate(ecco2_haitang_lon)
+flat_lat = np.concatenate(ecco2_haitang_lat)
 # flattened_longitude = ecco2_haitang_lon[-1]
 # flattened_latitude = ecco2_haitang_lat[-1]
 # Create a plot with Cartopy projection
+max_lat = flat_lat.max() + 10
+max_lon = flat_lon.max() + 10
+min_lat = flat_lat.min() - 10
+min_lon = flat_lon.min() - 10
+
 fig = plt.figure(figsize=(10, 8))
 ax = plt.axes(projection=ccrs.Mercator())
-ax.set_extent([130, 180, 0, 40], crs=ccrs.PlateCarree())
+ax.set_extent([min_lon, max_lon, min_lat, max_lat], crs=ccrs.PlateCarree())
 
 # Add map features
 ax.add_feature(cfeature.COASTLINE)
@@ -95,29 +101,27 @@ ax.add_feature(cfeature.RIVERS)
 ax.gridlines(draw_labels=True)
 
 # Plot points on the map
-ax.scatter(flattened_longitude, flattened_latitude, s=10, color='red', marker='o', alpha=0.7, transform=ccrs.PlateCarree())
+ax.scatter(flat_lon, flat_lat, s=10, color='red', marker='o', alpha=0.7, transform=ccrs.PlateCarree())
 
 # Add title
-plt.title('Longitude and Latitude Points on Map')
+plt.title('Longitude and Latitude Points on Map', weight='bold')
 plt.show()
 #%%
 # -------------------
 # Specific Humidity
 # -------------------
 
-shum_mean_arr = []
+shum_arr = []
 shum_10_list = []
-shum_mean_arr, shum_10_list = mt.shum_donut_mean(tc_coords, present_shum_dataset)
-
+shum_arr, shum_10_list = mt.shum_donut_mean(tc_coords, present_shum_dataset)
 
 #%%
 # -----------------------
 # Mean sea level pressure
 # Pa to hPa (1hPa = 100Pa, divide 100)
 # -----------------------
-mslp_daily_averages = []
-
-mslp_daily_averages = mt.mslp_donut_mean(pre_dt, tc_coords, days_3_before_mslp)
+mslp_arr = []
+mslp_arr = mt.mslp_donut_mean(pre_dt, tc_coords, days_3_before_mslp)
 
 #%%
 # -----------------------
@@ -128,6 +132,7 @@ airt_array = []
 airt_10_list = []
 airt_array, airt_10_list = mt.airt_donut_mean(dt, tc_coords, present_airt_dataset)
 # %%
+
 dims = dict(
     time = dt,
     level = level_arr
@@ -138,8 +143,8 @@ lsm_arr = np.ones((len(pre_dt), len(level_arr)))
 data_vars = {
     'lsm': (['time', 'level'], lsm_arr),
     'airt': (['time', 'level'], airt_array),
-    'shum': (['time', 'level'], shum_mean_arr),
-    'mslp': (['time'], mslp_daily_averages),
+    'shum': (['time', 'level'], shum_arr),
+    'mslp': (['time'], mslp_arr),
     'sst' : (['time'], Tmix_list),
     'mixD' : (['time'], Dmix_list),
     'shum_10m': (['time'], shum_10_list),
@@ -147,18 +152,17 @@ data_vars = {
 }
 
 dataset = xr.Dataset(data_vars, coords=dims)
-nc_path = '/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_input_durSST_donut_ori.nc'
+nc_path = '/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_input_durSST_donut_'+area_type+'.nc'
 dataset.to_netcdf(path=nc_path)
-#%%
 input_ds = xr.open_dataset(nc_path)
 input_ds
 #%%
 output_ds = mpi.run_sample_dataset(input_ds, CKCD=0.9)
-output_ds.to_netcdf('/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_output_durSST_donut_ori.nc')
+output_ds.to_netcdf('/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_output_durSST_donut_'+area_type+'.nc')
 
 # %%
-output_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_output_durSST_donut_ori.nc')
-#%%
+
+output_ds = xr.open_dataset('/home/tkdals/homework_3/MPI_ex/data/800200_' + tc_name + '_output_durSST_donut_'+area_type+'.nc')
 output_ds
 #%%
 output_ds['vmax'] = output_ds['vmax'] * 1.94384 # m/s t Knots
@@ -168,23 +172,18 @@ output_ds
 # Plot MPI, TC wind speed
 # =============================================
 dur_mpi = output_ds['vmax'].data
-
 usa_wind = df_tc.usa_wind # unit : Knots
-Tmix_list
-Dmix_list
 time_arr = np.arange(len(dt))
 plt.figure(figsize=(10, 6))
 plt.plot(time_arr, usa_wind, 'bo-', color='deeppink', label='usa_wind')
 plt.plot(time_arr, dur_mpi, 'bo-', color='purple', label='MPI')
-plt.ylabel('wind speed(Knots)')
-plt.title(tc_name + 'MPI, usa_wind')
+plt.ylabel('wind speed(Knots)', weight='bold')
+plt.title(tc_name + ' MPI, usa_wind', weight='bold')
 plt.xticks(ticks=np.arange(len(formatted_dates)), labels=formatted_dates, rotation=45, fontsize=9)  # 회전 추가로 레이블이 겹치지 않게 함
 plt.yticks(fontsize=9)
 plt.legend(loc='upper left')
 plt.show()
 
-# %%
-print(len(dt))
 #%%
 # =============================================
 # Plot MPI, Mixing temperature
@@ -198,18 +197,18 @@ plt.rcParams['font.size'] = 12
 
 fig, ax1 = plt.subplots()
 plt.xticks(ticks=np.arange(len(formatted_dates)), labels=formatted_dates, rotation=45, fontsize=9)
+
 ax1.set_ylim(0, 150)
-ax1.set_ylabel('mpi(knots)')
+ax1.set_ylabel('mpi(knots)', weight='bold')
 ax1.plot(time_arr, mpi_2, 'bo-', color='red', label='mpi')
 ax1.legend(loc='upper right')
 
 ax2 = ax1.twinx()
-ax2.set_ylabel('mixing temperature(degreeC)')
+ax2.set_ylabel('mixing temperature(degreeC)', weight='bold')
 ax2.set_ylim(0, 30)
 ax2.plot(time_arr, mixing_t_2, 'bo-', color='blue', label='mixing temp')
 ax2.legend(loc='upper left')
 
-# plt.title('Old mixing temperature, MPI 6 hours interval')
-plt.title('Choiwan Mixing temperature, MPI')
+plt.title(tc_name + ' Mixing temperature, MPI', weight='bold')
 plt.show()
-# %%
+# %%s
