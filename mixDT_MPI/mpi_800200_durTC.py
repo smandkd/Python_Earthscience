@@ -2,21 +2,18 @@
 import MPI_ex.MPI_mixing_depth_temp.mixing_dt_mpi.methods as mt 
 import MPI_ex.MPI_mixing_depth_temp.mixing_dt_mpi.mpi as mpi 
 
-import scipy.interpolate as interpolate
-
 import xarray as xr
 import numpy as np
 
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import shapely.geometry as sgeom
 
 import warnings
 warnings.filterwarnings(action='ignore')
 #%%
-tc_name = 'choiwan'
-tc_sid = b'2009255N13155'
+tc_name = 'haitang'
+tc_sid = b'2005192N22155'
 tc_agency = b'jtwc_wp'
 
 # %%
@@ -34,13 +31,19 @@ formatted_dates = [f"{date.astype(object).month}/{date.astype(object).day}" for 
 formatted_dates
 
 tc_coords = mt.TC_usa_center_points(tc_dataset)
+
+years_months = sorted(set([(d.astype('datetime64[Y]').astype(int) + 1970, d.astype('datetime64[M]').astype(int) % 12 + 1) for d in dt]))
+year = years_months[0][0]
+month = years_months[0][1]
 #%%
-pre_dt
-#%%
-airt_dataset = xr.open_dataset('/home/data/ECMWF/ERA5/WP/6hourly/airt/era5_pres_temp_200909.nc')
-shum_dataset = xr.open_dataset('/home/data/ECMWF/ERA5/WP/6hourly/shum/era5_pres_spec_200909.nc')
-mslp_dataset = xr.open_dataset('/home/data/ECMWF/ERA5/WP/6hourly/mslp/era5_surf_mslp_200909.nc')
-sst_dataset = xr.open_dataset('/home/data/NOAA/OISST/v2.1/only_AVHRR/Daily/sst.day.mean.2009.nc')
+airt_path = f'/home/data/ECMWF/ERA5/WP/6hourly/airt/era5_pres_temp_{year:04d}{month:02d}.nc'
+shum_path = f'/home/data/ECMWF/ERA5/WP/6hourly/shum/era5_pres_spec_{year:04d}{month:02d}.nc'
+mslp_path = f'/home/data/ECMWF/ERA5/WP/6hourly/mslp/era5_surf_mslp_{year:04d}{month:02d}.nc'
+sst_path = f'/home/data/NOAA/OISST/v2.1/only_AVHRR/Daily/sst.day.mean.{year:04d}.nc'
+airt_dataset = xr.open_dataset(airt_path)
+shum_dataset = xr.open_dataset(shum_path)
+mslp_dataset = xr.open_dataset(mslp_path)
+sst_dataset = xr.open_dataset(sst_path)
 
 level_arr = mt.sort_level_downgrade(airt_dataset)
 #%%
@@ -50,7 +53,6 @@ days_3_before_mslp = mslp_dataset.sel(time=pre_dt, drop=True)
 present_airt_dataset = airt_dataset.sel(time=dt, drop=True)
 #%%
 df_tc = mt.create_TC_dataframe(tc_dataset)
-# %%
 #%%
 # ----------------------------
 #            DAT
@@ -72,11 +74,6 @@ Tmix_list, Dmix_list, ecco2_haitang_lon, ecco2_haitang_lat = mt.calculate_depth_
 
 print(f'Tmix : {np.round(Tmix_list, 2)}')
 print(f'Dmix : {np.round(Dmix_list, 2)}')
-print(f'Potential temperature : {Theta_list}')
-print(f'Salinity : {Salt_list}')
-print(f'Density : {Dens_list}')
-print(f'Residence time : {FT_list}')
-print(f'Wind stress : {Tx_list}')
 
 #%%
 flattened_longitude = np.concatenate(ecco2_haitang_lon)
