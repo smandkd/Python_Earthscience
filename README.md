@@ -4,7 +4,7 @@ First, you need to install some extensions and create conda environment.
 
 Extension : Jupyter, Jupyter Cell Tags, Jupyter Slide Show, Jupyter Keymap, Python, Pylance, Python extended, vscode-pdf
 
-conda environment : There is requirements.txt, create conda environment, check packeges and then install in it.
+conda environment : There is requirements.txt about packeges needed. Create conda environment, check packeges and then install in it.
 
 Then in terminal, command 
 'git clone 'url of this repository''
