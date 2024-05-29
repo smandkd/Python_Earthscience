@@ -15,6 +15,6 @@ Then in terminal, command
 : Calculate dur MPI 
 
 If you see mpi_preTC.py or mpi_durTC.py, there are '#%%' in code. 
-This is cell of Python and if you command 'shift+enter', then jupyter file is created. 
+This is cell of Python and if you command 'shift+enter', then jupyter file will be created. 
 Before you command, check python interpreter that yours conda environment is selected correctly. 
 
