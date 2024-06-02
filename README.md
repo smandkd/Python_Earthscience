@@ -25,4 +25,4 @@ Python_Earthscience/MPI_ex/figure : Some figures will be stored in this director
 
 Python_Earthscience/MPI_ex/tcpyPI-1.3 : This file is original pyPI, but it's unnecessary because I changed code for this modules, so you don't need to use this file. If you want to see whole code of pyPI, then check it. 
 
-Python_Earthscience/MPI_ex/wind_stress : This file is about calculating wind stress example. In calculating durTC MPI, there is mixing temperature. I changed wind stress to newer version for mixing temperature. 
+Python_Earthscience/MPI_ex/wind_stress : This file is about calculating wind stress example. In calculating durTC MPI, there is a part of mixing temperature. I changed wind stress to newer version for mixing temperature. 
