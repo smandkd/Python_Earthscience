@@ -63,7 +63,7 @@ land_mask = cfeature.NaturalEarthFeature(
 
 # 지도 시각화
 fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
-ax.set_extent([120, 133, 29, 38])
+ax.set_extent([126, 127, 33, 34])
 
 # 해양과 육지, 국가 경계선 추가
 ax.add_feature(cfeature.COASTLINE, zorder=1, color='black')
@@ -127,26 +127,39 @@ plt.ylabel('Temperature (°C)')
 plt.title('Sea Surface Temperature from 1980 to 2020')
 plt.show()
 # %%
+# ======================================
+# sst, rainfall 산점도 그래프 
+# ======================================
 X = jeju_sst_1980_2020
 Y = rainfall_jeju
-# %% 
+
+
 plt.scatter(X, Y, alpha=0.5)
+
 plt.xlabel('jeju sst')
 plt.ylabel('jeju rainfall')
 plt.show()
-# %%
+
+#%%
+# ===========================================
+# sst, rainfall 공분산
+# ===========================================
 cov = np.cov(X, Y)[0, 1]
+print(f'공분산 : {cov}')
 # %%
+# ===========================================
+# sst, rainfall 공분산 표준화 
+# ===========================================
 corr = np.corrcoef(X, Y)[0, 1]
-print(corr)
+print(f'표준화된 공분산 : {corr}')
 # %%
+# =========================================
+# p-value 
+# =========================================
 pearsonr = stats.pearsonr(X, Y)
 pvalue = pearsonr.pvalue
-#%%
 
 formatted_value = f"{pvalue:.40f}"
-
-# 불필요한 소수점 자릿수를 제거하기 위해 문자열을 조정
 formatted_value = formatted_value.rstrip('0').rstrip('.')
 
 print(formatted_value)
